@@ -1,9 +1,6 @@
 chrome.runtime.onMessage.addListener(function(request) {
-	console.log(request);
 	if (request.action === "make_list") {
 		makeList(request.data);
-	} else if (request.action === "open_tab") {
-		chrome.tabs.create({url: request.url});
 	}
 });
 
@@ -17,7 +14,6 @@ function makeList(options)
 		, csv = "data:text/csv;charset=utf-8,"
 		, lines = [['First', 'Last', 'Email', 'Position', 'Company', 'Other']]
 		, link = document.createElement('a')
-		, prepareEmailName
 		, rowCount = 0
 		, statusesLength = 0
 		, ticketTypesLength = 0
@@ -37,7 +33,11 @@ function makeList(options)
 		});
 	}
 
-	options.emailTemplate = options.emailTemplate || "{$name}@test.eventfarm.com";
+	options.emailTemplate = options.emailTemplate || "";
+
+	if (!options.emailTemplate) {
+		lines[0].splice(2, 1);
+	}
 
 	if (options.ticketTypes && options.ticketTypes.length) {
 		lines[0].push('Ticket Type');
@@ -49,21 +49,6 @@ function makeList(options)
 		statusesLength = options.statuses.length;
 	}
 
-	// force lower case and get rid of any dots at the start or end of the string
-	prepareEmailName = function (name) {
-		name = name.toLowerCase();
-
-		if (name.substr(0, 1) === '.') {
-			name = name.substr(1);
-		}
-
-		if (name.substr(-1) === '.') {
-			name = name.substr(0, name.length - 1);
-		}
-
-		return name;
-	};
-
 	// gather data
 	$table.find('td.name').each(function (i, element) {
 		var name = $(element).find('> a').text().trim()
@@ -71,7 +56,6 @@ function makeList(options)
 			, description = $(element).find('.description').text().split(',')
 			, position = description[0] ? String(description[0]).trim() : ''
 			, company = description[1] ? String(description[1]).trim(): ''
-			, email = options.emailTemplate.replace('{$name}', parts.map(prepareEmailName).join('.'))
 			, last = parts.pop()
 			, first = parts.join(' ')
 			, nameHref = $(element).find('> a').attr('href').split('/')
@@ -80,7 +64,11 @@ function makeList(options)
 
 		data.first.push(first);
 		data.last.push(last);
-		data.email.push(email);
+
+		if (options.emailTemplate) {
+			data.email.push(options.emailTemplate.replace('{$name}', [first, last].join(' ').split(' ').map(prepareEmailName).join('.')));
+		}
+
 		data.other.push(other);
 		data.company.push(company);
 		data.position.push(position);
@@ -125,11 +113,14 @@ function makeList(options)
 		var line = [
 			data.first[r],
 			data.last[r],
-			options.emailTemplate.replace('{$name}', [data.first[r], data.last[r]].join(' ').split(' ').map(prepareEmailName).join('.')),
 			data.position[r],
 			data.company[r],
 			data.other[r]
 		];
+
+		if (options.emailTemplate) {
+			line.splice(2, 0, data.email[r]);
+		}
 
 		if (ticketTypesLength) {
 			line.push(data.tickettype[r]);
@@ -152,15 +143,29 @@ function makeList(options)
 	link.setAttribute('href', encodeURI(csv));
 	link.setAttribute(
 		'download',
-		'IMdb-' + (urlParameters['birth_monthday'] ? urlParameters['birth_monthday'] : urlParameters['birth_month'] + '-' + urlParameters['birth_day'])
+		'IMDb-' + (urlParameters['birth_monthday'] ? urlParameters['birth_monthday'] : urlParameters['birth_month'] + '-' + urlParameters['birth_day'])
 		+ ((ticketTypesLength || statusesLength) ? '-guest-list' : '-group') + '-'
 		+ parseInt($table.find('tr.detailed:first .number').text()) + '_' + parseInt($table.find('tr.detailed:last .number').text())
 		+ '.csv'
 	);
-	//link.style = "visibility:hidden";
-	//document.body.appendChild(link);
 	link.click();
-	//document.body.removeChild(link);
+}
+
+// force lower case and get rid of any dots at the start or end of the string
+function prepareEmailName(name)
+{
+	name = name.toLowerCase();
+
+	if (name.substr(0, 1) === '.') {
+		name = name.substr(1);
+	}
+
+	if (name.substr(-1) === '.') {
+		name = name.substr(0, name.length - 1);
+	}
+
+	// replace using same rules from FuzzySearch
+	return name.replace(/[\t\n\r`~!@#$%^&*()+=;:'"<>?,/\\|]/g, '');
 }
 
 // http://bost.ocks.org/mike/shuffle/
