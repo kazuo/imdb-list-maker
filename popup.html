@@ -12,17 +12,17 @@
     <link rel="stylesheet" href="css/popup.css">
 </head>
 <body>
-<div class="container">
+<div class="container" ng-controller="ListMakerCtrl as listMakerCtrl">
     <div class="row">
         <div class="col-md-12">
             <h1>IMDb List Maker</h1>
-            <p>Creates a list from <a href="#" id="birthday-link">IMDb birthdays</a></p>
+            <p>Creates a list from <a href="" ng-click="listMakerCtrl.openBirthdayLink()">IMDb birthdays</a></p>
             <fieldset>
-                <form>
+                <form name="listMakerCtrl.form" ng-submit="listMakerCtrl.submit()">
                     <div class="form-group">
                         <label for="email-template" class="control-label col-sm-2">Email Template</label>
                         <div class="col-sm-10">
-                            <input type="text" class="form-control" id="email-template">
+                            <input type="text" class="form-control" id="email-template" ng-model="listMakerCtrl.settings.emailTemplate">
                             <p class="help-block">Use {$name} as part of the template:
                                 e.g. {$name}@example.com would be first.last@example.com</p>
                         </div>
@@ -30,20 +30,20 @@
                     <div class="form-group">
                         <label for="ticket-types" class="control-label col-sm-2">Ticket Types</label>
                         <div class="col-sm-10">
-                            <input type="text" class="form-control" id="ticket-types">
+                            <input type="text" class="form-control" id="ticket-types" ng-model="listMakerCtrl.settings.ticketTypes">
                         </div>
                     </div>
                     <div class="form-group">
                         <label for="statuses" class="control-label col-sm-2">Statuses</label>
                         <div class="col-sm-10">
-                            <input type="text" class="form-control" id="statuses">
+                            <input type="text" class="form-control" id="statuses" ng-model="listMakerCtrl.settings.statuses">
                         </div>
                     </div>
                     <div class="form-group">
                         <div class="col-sm-offset-2 col-sm-10">
                             <div class="checkbox">
                                 <label>
-                                    <input type="checkbox" id="shuffle-first-name"> Shuffle First Name
+                                    <input type="checkbox" id="shuffle-first-name" ng-model="listMakerCtrl.settings.shuffleFirst"> Shuffle First Name
                                 </label>
                             </div>
                         </div>
@@ -52,14 +52,15 @@
                         <div class="col-sm-offset-2 col-sm-10">
                             <div class="checkbox">
                                 <label>
-                                    <input type="checkbox" id="shuffle-company"> Shuffle Company
+                                    <input type="checkbox" id="shuffle-company" ng-model="listMakerCtrl.settings.shuffleCompany"> Shuffle Company
                                 </label>
                             </div>
                         </div>
                     </div>
                     <div class="form-group">
                         <div class="col-sm-offset-2 col-sm-10">
-                            <button type="submit">Make List</button>
+                            <button ng-click="listMakerCtrl.scrapeAndNextPage()">Scrape List then Next</button>
+                            <button ng-click="listMakerCtrl.scrapeAndDownload()">Make List</button>
                         </div>
                     </div>
                 </form>
@@ -68,6 +69,6 @@
     </div>
 </div>
 </body>
-<script src="js/jquery-2.1.4.min.js"></script>
+<script src="js/angular.min.js"></script>
 <script src="js/popup.js"></script>
 </html>

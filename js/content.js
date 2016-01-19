@@ -1,23 +1,30 @@
-chrome.runtime.onMessage.addListener(function(request) {
-	if (request.action === "make_list") {
-		makeList(request.data);
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+	var data;
+
+	if (request.action === "download") {
+		download(request.data);
+	} else if (request.action === "make_list") {
+		data = scrape(request.data);
+		download(data);
+		sendResponse({data: data});
+	} else if (request.action === 'next_page') {
+		window.location.href = $('#right .pagination a:last').attr('href');
+	} else if (request.action === 'scrape_list') {
+		data = scrape(request.data);
+		sendResponse({data: data});
 	}
 });
 
-function makeList(options)
+function scrape(options)
 {
 	options = options || {};
 
 	var $table = $('#main table.results')
 		, data = {first: [], last: [], email: [], position: [], company: [], other: [], tickettype: [], status: []}
 		, tmpDeck
-		, csv = "data:text/csv;charset=utf-8,"
-		, lines = [['First', 'Last', 'Email', 'Position', 'Company', 'Other']]
-		, link = document.createElement('a')
 		, rowCount = 0
 		, statusesLength = 0
 		, ticketTypesLength = 0
-		, urlParameters = {}
 		, r
 		;
 
@@ -35,17 +42,11 @@ function makeList(options)
 
 	options.emailTemplate = options.emailTemplate || "";
 
-	if (!options.emailTemplate) {
-		lines[0].splice(2, 1);
-	}
-
 	if (options.ticketTypes && options.ticketTypes.length) {
-		lines[0].push('Ticket Type');
 		ticketTypesLength = options.ticketTypes.length;
 	}
 
 	if (options.statuses && options.statuses.length) {
-		lines[0].push('Status');
 		statusesLength = options.statuses.length;
 	}
 
@@ -56,8 +57,9 @@ function makeList(options)
 			, description = $(element).find('.description').text().split(',')
 			, position = description[0] ? String(description[0]).trim() : ''
 			, company = description[1] ? String(description[1]).trim(): ''
-			, last = parts.pop()
-			, first = parts.join(' ')
+			, last = parts.pop().trim()
+			, first = parts.join(' ').trim()
+			, emailName = []
 			, nameHref = $(element).find('> a').attr('href').split('/')
 			, other = nameHref[2] ? String(nameHref[2]).trim() : ''
 			;
@@ -65,8 +67,16 @@ function makeList(options)
 		data.first.push(first);
 		data.last.push(last);
 
+		if (first.length) {
+			emailName.push(first);
+		}
+
+		if (last.length) {
+			emailName.push(last);
+		}
+
 		if (options.emailTemplate) {
-			data.email.push(options.emailTemplate.replace('{$name}', [first, last].join(' ').split(' ').map(prepareEmailName).join('.')));
+			data.email.push(options.emailTemplate.replace('{$name}', emailName.join(' ').split(' ').map(prepareEmailName).join('.')));
 		}
 
 		data.other.push(other);
@@ -108,9 +118,42 @@ function makeList(options)
 		}
 	}
 
+	data.emailTemplate = options.emailTemplate;
+	data.length = rowCount;
+	data.ticketTypesLength = ticketTypesLength;
+	data.statusesLength = statusesLength;
+	data.start = $table.find('tr.detailed:first .number').text();
+	data.end = $table.find('tr.detailed:last .number').text();
+
+	return data;
+}
+
+function download(data)
+{
+	var csv = "data:text/csv;charset=utf-8,"
+		, length = data.length
+		, line
+		, lines = [['First', 'Last', 'Email', 'Position', 'Company', 'Other']]
+		, link = document.createElement('a')
+		, r
+		, urlParameters = {}
+		;
+
+	if (!data.emailTemplate) {
+		lines[0].splice(2, 1);
+	}
+
+	if (data.ticketTypesLength) {
+		lines[0].push('Ticket Type');
+	}
+
+	if (data.statusesLength) {
+		lines[0].push('Status');
+	}
+
 	// create lines
-	for (r = 0; r < rowCount; r++) {
-		var line = [
+	for (r = 0; r < length; r++) {
+		line = [
 			data.first[r],
 			data.last[r],
 			data.position[r],
@@ -118,15 +161,15 @@ function makeList(options)
 			data.other[r]
 		];
 
-		if (options.emailTemplate) {
+		if (data.emailTemplate) {
 			line.splice(2, 0, data.email[r]);
 		}
 
-		if (ticketTypesLength) {
+		if (data.ticketTypesLength) {
 			line.push(data.tickettype[r]);
 		}
 
-		if (statusesLength) {
+		if (data.statusesLength) {
 			line.push(data.status[r]);
 		}
 
@@ -144,8 +187,8 @@ function makeList(options)
 	link.setAttribute(
 		'download',
 		'IMDb-' + (urlParameters['birth_monthday'] ? urlParameters['birth_monthday'] : urlParameters['birth_month'] + '-' + urlParameters['birth_day'])
-		+ ((ticketTypesLength || statusesLength) ? '-guest-list' : '-group') + '-'
-		+ parseInt($table.find('tr.detailed:first .number').text()) + '_' + parseInt($table.find('tr.detailed:last .number').text())
+		+ ((data.ticketTypesLength || data.statusesLength) ? '-guest-list' : '-group') + '-'
+		+ parseInt(data.start) + '_' + parseInt(data.end)
 		+ '.csv'
 	);
 	link.click();
