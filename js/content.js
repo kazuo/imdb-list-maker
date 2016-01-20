@@ -15,6 +15,11 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     }
 });
 
+/**
+ * Scrapes the current page and returns the data
+ * @param {object} options
+ * @returns {{first: Array, last: Array, email: Array, position: Array, company: Array, other: Array, tickettype: Array, status: Array}}
+ */
 function scrape(options)
 {
     options = options || {};
@@ -128,6 +133,10 @@ function scrape(options)
     return data;
 }
 
+/**
+ * Automatically downloads a CSV file by the given data
+ * @param {object} data
+ */
 function download(data)
 {
     var csv = "data:text/csv;charset=utf-8,"
@@ -194,7 +203,11 @@ function download(data)
     link.click();
 }
 
-// force lower case and get rid of any dots at the start or end of the string
+/**
+ * Prepares email name (before the "@") by forcing lower case and removes any dots at the start or end of the string
+ * @param {string} name
+ * @returns {string}
+ */
 function prepareEmailName(name)
 {
     name = name.toLowerCase();
@@ -211,7 +224,11 @@ function prepareEmailName(name)
     return name.replace(/[\t\n\r`~!@#$%^&*()+=;:'"<>?,/\\|]/g, '');
 }
 
-// http://bost.ocks.org/mike/shuffle/
+/**
+ * Shuffles an array. Shameless borrowed from http://bost.ocks.org/mike/shuffle/
+ * @param {Array} array
+ * @returns {Array}
+ */
 function shuffleArray(array)
 {
     var m = array.length, t, i;

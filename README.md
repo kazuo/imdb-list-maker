@@ -13,3 +13,8 @@ There will be an action for IMDb List Maker in Chrome. You can only create a lis
 Settings are automatically saved whenever a list is created.
 
 Enjoy!
+
+## Technical
+The script `content.js` simply uses jQuery to parse through the DOM. However, script `popup.js` uses AngularJS to aid
+ with the popup UI. Sure, it may be a little overkill, but using AngularJS instead of jQuery made it a bit easier to
+ maintain. 

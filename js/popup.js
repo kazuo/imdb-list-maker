@@ -84,6 +84,9 @@
                 });
             }
 
+            /**
+             * Opens the IMDb birthday link to today's date
+             */
             function openBirthdayLink()
             {
                 var date = new Date();
@@ -150,6 +153,10 @@
                 });
             }
 
+            /**
+             * Scrapes and downloads
+             * @returns {Promise}
+             */
             function scrapeAndDownload()
             {
                 var deferred = $q.defer();
@@ -165,6 +172,10 @@
                 });
             }
 
+            /**
+             * Scrapes and move to the next page
+             * @returns {Promise}
+             */
             function scrapeAndNextPage()
             {
                 return scrape().then(function (data) {
@@ -176,7 +187,5 @@
         }
     ]);
 
-    angular.element(document).ready(function () {
-        angular.bootstrap(document, ['app.ListMaker']);
-    });
+    angular.bootstrap(document, ['app.ListMaker']);
 })();
